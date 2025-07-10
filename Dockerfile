@@ -1,5 +1,5 @@
-# Python 3.11 asosida eng minimal image
-FROM python:3.11-slim
+# Python 3.12 asosida eng minimal image
+FROM python:3.12-slim
 
 # Rust build muhit sozlamalari
 ENV PYTHONDONTWRITEBYTECODE=1 \
