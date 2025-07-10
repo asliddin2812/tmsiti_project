@@ -18,17 +18,22 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install dependencies
+# Install pydantic via binary only
+RUN pip install --only-binary pydantic,pydantic-core \
+    pydantic==2.5.0 \
+    pydantic-settings==2.1.0
+
+# Copy requirements and install remaining dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code
+# Copy application code
 COPY . .
 
 # Create folders for media/static
 RUN mkdir -p static/uploads static/default
 
-# Create a user
+# Create a non-root user
 RUN useradd --create-home --shell /bin/bash tmsiti \
     && chown -R tmsiti:tmsiti /app
 
@@ -41,5 +46,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the FastAPI app with uvicorn
+# Start FastAPI app with uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
