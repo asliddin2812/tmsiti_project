@@ -1,56 +1,31 @@
-# Python 3.12 asosida eng minimal image
+# Python 3.12 slim tasviridan foydalanamiz
 FROM python:3.12-slim
 
-# Rust build muhit sozlamalari
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_BUILD_ISOLATION=1 \
-    PIP_ONLY_BINARY=:all: \
-    CARGO_HOME=/tmp/cargo \
-    RUSTUP_HOME=/tmp/rustup \
-    PATH="/root/.cargo/bin:$PATH"
-
-# Ishchi katalog
+# Ishchi direktoriyani sozlash
 WORKDIR /app
 
-# Zarur tizim kutubxonalarini o‘rnatish
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+# Tizim kutubxonalarni o'rnatish
+RUN apt-get update && apt-get install -y \
     libpq-dev \
-    libffi-dev \
-    curl \
     gcc \
-    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Rust toolchainni o‘rnatish
+# pip-ni yangilash
+RUN pip install --upgrade pip
+
+# Rust o'rnatish (cryptography uchun)
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Pydantic va pydantic-settings uchun .whl bilan o‘rnatish (Rust kutubxona bo‘lishiga qaramay)
-RUN pip install --only-binary pydantic,pydantic-core \
-    "pydantic==2.5.0" \
-    "pydantic-settings==2.1.0"
-
-# requirements.txt fayl orqali qolgan kutubxonalarni o‘rnatamiz
+# Python paketlarini o'rnatish
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Loyihani konteynerga nusxalash
+# Loyiha fayllarini nusxalash
 COPY . .
 
-# Static fayllar uchun papkalar
-RUN mkdir -p static/uploads static/default
-
-# Oddiy user bilan ishlash (root bo‘lmaslik uchun)
-RUN useradd --create-home --shell /bin/bash tmsiti && chown -R tmsiti:tmsiti /app
-USER tmsiti
-
-# Uvicorn port
+# Portni ochish
 EXPOSE 8000
 
-# Health check (agar health endpoint bo‘lsa)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Loyihani ishga tushirish
+# Ilovani ishga tushirish
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
