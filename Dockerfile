@@ -5,8 +5,10 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_BUILD_ISOLATION=1 \
+    PIP_ONLY_BINARY=:all:
 
 # Install system dependencies
 RUN apt-get update \
@@ -32,13 +34,10 @@ RUN useradd --create-home --shell /bin/bash tmsiti \
 
 USER tmsiti
 
-# ❌ Remove this line unless create_tables.py exists and is needed
-# RUN python create_tables.py
-
 # Expose FastAPI port
 EXPOSE 8000
 
-# Add health check
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 

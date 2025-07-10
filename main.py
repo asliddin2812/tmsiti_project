@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 
 from core.database import init_db, SessionLocal
 from models.user import User, UserRole, UserStatus
@@ -62,3 +63,7 @@ def on_startup():
         print(f"\u2139\ufe0f Admin allaqachon mavjud: {admin_email}")
 
     db.close()
+
+@app.get("/health")
+def health():
+    return JSONResponse(content={"status": "ok"})
