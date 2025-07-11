@@ -74,10 +74,26 @@ def list_shnq(page: int = 1, size: int = 10, lang: str = Query("uz"), search: st
     paginated.items = [transform_item_for_response(item, lang, {"title": "title"}) for item in paginated.items]
     return paginated
 
-@router.post("/shnq", response_model=ShnqResponse)
-def create_shnq(data: ShnqCreate = Depends(), file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(admin_required)):
-    item = create_item(db, Shnq, data)
-    return transform_item_for_response(item, "uz", {"title": "title"})
+@router.post("/api/v1/regulatory/shnq", response_model=ShnqResponse)
+async def create_shnq(shnq: ShnqCreate, db: Session = Depends(get_db)):
+    try:
+        db_shnq = Shnq(
+            subsystem=shnq.subsystem,
+            group=shnq.group,
+            code=shnq.code,
+            title_uz=shnq.title_uz,
+            title_ru=shnq.title_ru,
+            title_en=shnq.title_en,
+            link=shnq.link
+        )
+        db.add(db_shnq)
+        db.commit()
+        db.refresh(db_shnq)
+        return db_shnq
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating SHNQ: {str(e)}")
+
 
 @router.put("/shnq/{id}", response_model=ShnqResponse)
 def update_shnq(id: int, data: ShnqUpdate, db: Session = Depends(get_db), user=Depends(admin_required)):
@@ -96,10 +112,17 @@ def list_standards(page: int = 1, size: int = 10, lang: str = Query("uz"), searc
     paginated.items = [transform_item_for_response(item, lang, {"title": "title", "description": "description"}) for item in paginated.items]
     return paginated
 
-@router.post("/standards", response_model=StandardResponse)
-def create_standard(data: StandardCreate = Depends(), file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(admin_required)):
-    item = create_item(db, Standard, data)
-    return transform_item_for_response(item, "uz", {"title": "title", "description": "description"})
+@router.post("/api/v1/regulatory/standard", response_model=StandardResponse)
+async def create_standard(standard: StandardCreate, db: Session = Depends(get_db)):
+    try:
+        db_standard = Standard(**standard.dict())
+        db.add(db_standard)
+        db.commit()
+        db.refresh(db_standard)
+        return db_standard
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating Standard: {str(e)}")
 
 @router.put("/standards/{id}", response_model=StandardResponse)
 def update_standard(id: int, data: StandardUpdate, db: Session = Depends(get_db), user=Depends(admin_required)):

@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.orm import Session
@@ -6,7 +7,7 @@ from core.database import get_db
 from models.institute import About, Management, Structure, StructuralDivision, Vacancy
 from schemas.institute import (
     AboutResponse, ManagementResponse, StructureResponse,
-    StructuralDivisionResponse, VacancyResponse
+    StructuralDivisionResponse, VacancyResponse, ManagementCreate
 )
 from utils.dependencies import admin_required
 from utils.pagination import paginate, PaginatedResponse
@@ -27,12 +28,28 @@ def save_file(file: UploadFile) -> str:
         shutil.copyfileobj(file.file, f)
     return f"/{path}"
 
-@router.get("/about", response_model=List[AboutResponse])
-def list_about(lang: Literal["uz", "ru", "en"] = Query("uz"), search: Optional[str] = Query(None), db: Session = Depends(get_db)):
+@router.get("/about")
+def list_about(
+    lang: Literal["uz", "ru", "en"] = Query("uz"),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     query = db.query(About)
+
     if search:
         query = query.filter(getattr(About, f"content_{lang}").ilike(f"%{search}%"))
-    return query.all()
+
+    results = query.all()
+
+    return [
+        {
+            "id": item.id,
+            "content": getattr(item, f"content_{lang}"),
+            "pdf_url": item.pdf_url
+        }
+        for item in results
+    ]
+
 
 @router.post("/about", response_model=AboutResponse)
 def create_about(content_uz: str = Form(...), content_ru: str = Form(...), content_en: str = Form(...), pdf_file: UploadFile = File(...)
@@ -99,14 +116,54 @@ def list_management(lang: Literal["uz", "ru", "en"] = Query("uz"), search: Optio
         ) for i in query.all()
     ]
 
-@router.post("/management", response_model=ManagementResponse)
-def create_management(full_name: str = Form(...), position_uz: str = Form(...), position_ru: str = Form(...), position_en: str = Form(...), profile_image: UploadFile = File(...), reception_days: Optional[str] = Form(None), phone: Optional[str] = Form(None), email: Optional[str] = Form(None), specialization_uz: Optional[str] = Form(None), specialization_ru: Optional[str] = Form(None), specialization_en: Optional[str] = Form(None), order_index: Optional[int] = Form(0), db: Session = Depends(get_db), user=Depends(admin_required)):
-    image_url = save_file(profile_image) if profile_image else None
-    item = Management(full_name=full_name, position_uz=position_uz, position_ru=position_ru, position_en=position_en, profile_image=image_url, reception_days=reception_days, phone=phone, email=email, specialization_uz=specialization_uz, specialization_ru=specialization_ru, specialization_en=specialization_en, order_index=order_index)
-    db.add(item)
+@router.post("/management", response_model=ManagementResponse, status_code=201)
+def create_management(
+    full_name: str = Form(...),
+    position_uz: str = Form(...),
+    position_ru: str = Form(...),
+    position_en: str = Form(...),
+    specialization_uz: str = Form(...),
+    specialization_ru: str = Form(...),
+    specialization_en: str = Form(...),
+    profile_image: UploadFile = File(...),
+    reception_days: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    lang: Literal["uz", "ru", "en"] = Query("uz"),
+    db: Session = Depends(get_db),
+    user=Depends(admin_required)  # Agar admin kerak bo‘lsa
+):
+    # Faylni saqlash
+    image_url = save_file(profile_image)
+
+    # Ma'lumotlar bazasiga yozish
+    new_item = Management(
+        full_name=full_name,
+        position_uz=position_uz,
+        position_ru=position_ru,
+        position_en=position_en,
+        specialization_uz=specialization_uz,
+        specialization_ru=specialization_ru,
+        specialization_en=specialization_en,
+        profile_image=image_url,
+        reception_days=reception_days,
+        phone=phone,
+        email=email
+    )
+    db.add(new_item)
     db.commit()
-    db.refresh(item)
-    return item
+    db.refresh(new_item)
+
+    return ManagementResponse(
+        full_name=new_item.full_name,
+        position=getattr(new_item, f"position_{lang}"),
+        specialization=getattr(new_item, f"specialization_{lang}"),
+        profile_image=new_item.profile_image,
+        reception_days=new_item.reception_days,
+        phone=new_item.phone,
+        email=new_item.email
+    )
+
 
 @router.put("/management/{id}", response_model=ManagementResponse)
 def update_management(id: int, full_name: Optional[str] = Form(None), position_uz: Optional[str] = Form(None), position_ru: Optional[str] = Form(None), position_en: Optional[str] = Form(None), profile_image: UploadFile = File(...), reception_days: Optional[str] = Form(None), phone: Optional[str] = Form(None), email: Optional[str] = Form(None), specialization_uz: Optional[str] = Form(None), specialization_ru: Optional[str] = Form(None), specialization_en: Optional[str] = Form(None), order_index: Optional[int] = Form(None), db: Session = Depends(get_db), user=Depends(admin_required)):
@@ -139,24 +196,42 @@ def delete_management(id: int, db: Session = Depends(get_db), user=Depends(admin
     return {"message": "O'chirildi"}
 
 @router.get("/structure", response_model=List[StructureResponse])
-def list_structure(lang: Literal["uz", "ru", "en"] = Query("uz"), search: Optional[str] = Query(None), db: Session = Depends(get_db)):
+def list_structure(
+    lang: Literal["uz", "ru", "en"] = Query("uz"),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     query = db.query(Structure)
     if search:
         query = query.filter(getattr(Structure, f"title_{lang}").ilike(f"%{search}%"))
+
     return [
         StructureResponse(
-            id=i.id,
-            title=getattr(i, f"title_{lang}"),
-            pdf_url=i.pdf_url,
-            created_at=i.created_at,
-            updated_at=i.updated_at
-        ) for i in query.all()
+            id=item.id,
+            title=getattr(item, f"title_{lang}"),
+            pdf_url=item.pdf_url,
+            created_at=item.created_at,
+            updated_at=item.updated_at
+        )
+        for item in query.all()
     ]
 
 @router.post("/structure", response_model=StructureResponse)
-def create_structure(title_uz: str = Form(...), title_ru: str = Form(...), title_en: str = Form(...), pdf_file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(admin_required)):
+def create_structure(
+    title_uz: str = Form(...),
+    title_ru: str = Form(...),
+    title_en: str = Form(...),
+    pdf_file: UploadFile=File(...),
+    db: Session = Depends(get_db),
+    user=Depends(admin_required)
+):
     pdf_url = save_file(pdf_file) if pdf_file else None
-    item = Structure(title_uz=title_uz, title_ru=title_ru, title_en=title_en, pdf_url=pdf_url)
+    item = Structure(
+        title_uz=title_uz,
+        title_ru=title_ru,
+        title_en=title_en,
+        pdf_url=pdf_url
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -203,7 +278,7 @@ def list_structural_divisions(lang: Literal["uz", "ru", "en"] = Query("uz"), sea
     ]
 
 @router.post("/structural-divisions", response_model=StructuralDivisionResponse)
-def create_structural_division(title_uz: str = Form(...), title_ru: str = Form(...), title_en: str = Form(...), head_full_name: str = Form(...), phone: Optional[str] = Form(None), email: Optional[str] = Form(None), profile_image: Optional[UploadFile] = File(None), db: Session = Depends(get_db), user=Depends(admin_required)):
+def create_structural_division(title_uz: str = Form(...), title_ru: str = Form(...), title_en: str = Form(...), head_full_name: str = Form(...), phone: Optional[str] = Form(None), email: Optional[str] = Form(None), profile_image: UploadFile=File(...), db: Session = Depends(get_db), user=Depends(admin_required)):
     image_url = save_file(profile_image) if profile_image else None
     item = StructuralDivision(title_uz=title_uz, title_ru=title_ru, title_en=title_en, head_full_name=head_full_name, phone=phone, email=email, profile_image=image_url)
     db.add(item)

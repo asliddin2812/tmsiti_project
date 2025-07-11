@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
-# SHNQ
+# === SHNQ ===
 class ShnqBase(BaseModel):
     subsystem: str
     group: str
@@ -24,22 +24,15 @@ class ShnqUpdate(BaseModel):
     title_en: Optional[str] = None
     link: Optional[str] = None
 
-class ShnqResponse(BaseModel):
+class ShnqResponse(ShnqBase):
     id: int
-    subsystem: str
-    group: str
-    code: str
-    title_uz: str
-    title_ru: Optional[str]
-    title_en: Optional[str]
-    link: Optional[str]
     created_at: datetime
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
-
-# STANDARDS
+# === STANDARD ===
 class StandardBase(BaseModel):
     code: str
     title_uz: str
@@ -63,23 +56,15 @@ class StandardUpdate(BaseModel):
     description_en: Optional[str] = None
     link: Optional[str] = None
 
-class StandardResponse(BaseModel):
+class StandardResponse(StandardBase):
     id: int
-    code: str
-    title_uz: str
-    title_ru: Optional[str]
-    title_en: Optional[str]
-    description_uz: str
-    description_ru: Optional[str]
-    description_en: Optional[str]
-    link: Optional[str]
     created_at: datetime
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
-
-# BUILDING REGULATION
+# === BUILDING REGULATION ===
 class BuildingRegulationBase(BaseModel):
     number: str
     code: str
@@ -99,21 +84,15 @@ class BuildingRegulationUpdate(BaseModel):
     title_en: Optional[str] = None
     link: Optional[str] = None
 
-class BuildingRegulationResponse(BaseModel):
+class BuildingRegulationResponse(BuildingRegulationBase):
     id: int
-    number: str
-    code: str
-    title_uz: str
-    title_ru: Optional[str]
-    title_en: Optional[str]
-    link: Optional[str]
     created_at: datetime
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
-
-# SMETA RESURS NORM
+# === SMETA RESURS NORM ===
 class SmetaResursNormBase(BaseModel):
     srn_code: str
     srn_title_uz: str
@@ -141,25 +120,15 @@ class SmetaResursNormUpdate(BaseModel):
     additional_shnqs: Optional[str] = None
     file: Optional[str] = None
 
-class SmetaResursNormResponse(BaseModel):
+class SmetaResursNormResponse(SmetaResursNormBase):
     id: int
-    srn_code: str
-    srn_title_uz: str
-    srn_title_ru: Optional[str]
-    srn_title_en: Optional[str]
-    main_shnq_code: Optional[str]
-    main_shnq_title_uz: Optional[str]
-    main_shnq_title_ru: Optional[str]
-    main_shnq_title_en: Optional[str]
-    additional_shnqs: Optional[str]
-    file: Optional[str]
     created_at: datetime
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
-
-# TECHNICAL REGULATIONS
+# === TECHNICAL REGULATION ===
 class TechnicalRegulationBase(BaseModel):
     code: str
     title_uz: str
@@ -183,23 +152,15 @@ class TechnicalRegulationUpdate(BaseModel):
     description_en: Optional[str] = None
     link: Optional[str] = None
 
-class TechnicalRegulationResponse(BaseModel):
+class TechnicalRegulationResponse(TechnicalRegulationBase):
     id: int
-    code: str
-    title_uz: str
-    title_ru: Optional[str]
-    title_en: Optional[str]
-    description_uz: Optional[str]
-    description_ru: Optional[str]
-    description_en: Optional[str]
-    link: Optional[str]
     created_at: datetime
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
-
-# REFERENCE
+# === REFERENCE ===
 class ReferenceBase(BaseModel):
     number: str
     title_uz: str
@@ -217,14 +178,10 @@ class ReferenceUpdate(BaseModel):
     title_en: Optional[str] = None
     link: Optional[str] = None
 
-class ReferenceResponse(BaseModel):
+class ReferenceResponse(ReferenceBase):
     id: int
-    number: str
-    title_uz: str
-    title_ru: Optional[str]
-    title_en: Optional[str]
-    link: Optional[str]
     created_at: datetime
 
     class Config:
         from_attributes = True
+        populate_by_name = True

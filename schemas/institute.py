@@ -18,12 +18,8 @@ class AboutUpdate(BaseModel):
     content_en: Optional[str]
     pdf_url: Optional[str]
 
-class AboutResponse(BaseModel):
+class AboutResponse(AboutBase):
     id: int
-    content_uz: str
-    content_ru: str
-    content_en: str
-    pdf_url: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
 
@@ -63,14 +59,10 @@ class ManagementUpdate(BaseModel):
     specialization_en: Optional[str]
     order_index: Optional[int]
 
-class ManagementResponse(BaseModel):
-    full_name: str
-    position: str
-    profile_image: Optional[str]
-    reception_days: Optional[str]
-    phone: Optional[str]
-    email: Optional[EmailStr]
-    specialization: Optional[str]
+class ManagementResponse(ManagementBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -92,10 +84,12 @@ class StructureUpdate(BaseModel):
     title_en: Optional[str]
     pdf_url: Optional[str]
 
-class StructureResponse(BaseModel):
+class StructureResponse(StructureBase):
     id: int
-    title: str
-    pdf_url: Optional[str] = None
+    title_uz: str
+    title_ru: str
+    title_en: str
+    pdf_url: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -125,9 +119,11 @@ class StructuralDivisionUpdate(BaseModel):
     email: Optional[EmailStr]
     profile_image: Optional[str]
 
-class StructuralDivisionResponse(BaseModel):
+class StructuralDivisionResponse(StructuralDivisionBase):
     id: int
-    title: str
+    title_uz: str
+    title_ru: str
+    title_en: str
     head_full_name: str
     phone: Optional[str]
     email: Optional[EmailStr]
@@ -173,11 +169,17 @@ class VacancyUpdate(BaseModel):
     attachment: Optional[str]
     is_active: Optional[bool]
 
-class VacancyResponse(BaseModel):
+class VacancyResponse(VacancyBase):
     id: int
-    title: str
-    description: str
-    requirements: str
+    title_uz: str
+    title_ru: str
+    title_en: str
+    description_uz: str
+    description_ru: str
+    description_en: str
+    requirements_uz: str
+    requirements_ru: str
+    requirements_en: str
     deadline: Optional[datetime]
     contact_email: EmailStr
     attachment: Optional[str]
